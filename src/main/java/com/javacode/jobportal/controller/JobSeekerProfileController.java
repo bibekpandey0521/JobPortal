@@ -126,7 +126,7 @@ public class JobSeekerProfileController {
 			throw new RuntimeException(ex);
 		}
 	    
-		return  "redirect:/dashboard/";
+		return  "re-direct:/dashboard/";
 	}
 }
 
