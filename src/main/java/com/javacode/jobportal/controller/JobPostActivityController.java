@@ -22,6 +22,7 @@ import com.javacode.jobportal.entity.RecruiterProfile;
 import com.javacode.jobportal.entity.Users;
 import com.javacode.jobportal.service.JobPostActivityService;
 import com.javacode.jobportal.service.JobSeekerApplyService;
+import com.javacode.jobportal.service.JobSeekerProfileService;
 import com.javacode.jobportal.service.JobSeekerSaveService;
 import com.javacode.jobportal.service.UsersService;
 
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Controller
 public class JobPostActivityController {
@@ -38,16 +40,19 @@ public class JobPostActivityController {
     private final JobPostActivityService jobPostActivityService;
     private final JobSeekerApplyService jobSeekerApplyService;
     private final JobSeekerSaveService jobSeekerSaveService;
+    private final JobSeekerProfileService jobSeekerProfileService;
 
     @Autowired
     public JobPostActivityController(UsersService usersService,
                                      JobPostActivityService jobPostActivityService,
                                      JobSeekerApplyService jobSeekerApplyService,
-                                     JobSeekerSaveService jobSeekerSaveService) {
+                                     JobSeekerSaveService jobSeekerSaveService,
+                                     JobSeekerProfileService jobSeekerProfileService) {
         this.usersService = usersService;
         this.jobPostActivityService = jobPostActivityService;
         this.jobSeekerApplyService = jobSeekerApplyService;
         this.jobSeekerSaveService = jobSeekerSaveService;
+        this.jobSeekerProfileService = jobSeekerProfileService;
     }
 
     @GetMapping("/dashboard/")
@@ -191,5 +196,25 @@ public class JobPostActivityController {
         model.addAttribute("jobPostActivity", jobPostActivity);
         model.addAttribute("user", usersService.getCurrentUserProfile());
         return "add-jobs";
+    }
+    
+    @PostMapping("job-details/apply/{id}")
+    public String apply(@PathVariable("id") int id,JobSeekerApply jobSeekerApply) {
+    	Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    	if(!(authentication instanceof AnonymousAuthenticationToken)) {
+    		String currentUsername = authentication.getName();
+    		Users user = usersService.findByEmail(currentUsername);
+    		Optional<JobSeekerProfile> seekerProfile =jobSeekerProfileService.getOne(user.getUserId());
+    		JobPostActivity jobPostActivity = jobPostActivityService.getOne(id);
+    		if(seekerProfile.isPresent() && jobPostActivity !=null) {
+    			jobSeekerApply.setUserId(seekerProfile.get());
+    			jobSeekerApply.setJob(jobPostActivity);
+    			jobSeekerApply.setApplyDate(new Date());
+    		}else {
+    			throw new RuntimeException("User not found");
+    		}
+    		jobSeekerApplyService.addNew(jobSeekerApply);
+    	}
+    	return "redirect:/dashboard/";
     }
 }
