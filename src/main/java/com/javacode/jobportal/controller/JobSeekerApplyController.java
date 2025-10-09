@@ -96,6 +96,6 @@ public class JobSeekerApplyController {
             jobSeekerApplyService.addNew(seekerProfile.get(), jobPostActivity);
         }
 
-        return "redirect:/dashboard/";
+        return "redirect:/dashboard";
     }
 }
